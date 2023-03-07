@@ -5,15 +5,24 @@ import random
 BACKGROUND_COLOR = "#B1DDC6"
 
 
-# ______ CREATE NEW FLASH CARDS _____
-data = pandas.read_csv("data/french_words.csv").to_dict(orient="records")
+# ______ GAME _____
 current_card = {}
+to_learn = {}
+
+try:
+   data = pandas.read_csv("data/words_to_learn.csv")
+except FileNotFoundError:
+   original_data = pandas.read_csv("data/french_words.csv")
+   to_learn = original_data.to_dict(orient="records")
+finally:
+   to_learn = data.to_dict(orient="records")
 
 
-def create_flashcard():
+
+def new_flashcard():
    global current_card, flip_timer
    window.after_cancel(flip_timer)
-   current_card = random.choice(data)
+   current_card = random.choice(to_learn)
    canvas.itemconfig(bg_image, image=card_front_photo)
    canvas.itemconfig(card_title, text="French", fill="black")
    canvas.itemconfig(card_word, text=current_card["French"], fill="black")
@@ -24,6 +33,16 @@ def show_answer():
    canvas.itemconfig(bg_image, image=card_back_photo)
    canvas.itemconfig(card_title, text="English", fill="white")
    canvas.itemconfig(card_word, text=current_card["English"], fill="white")
+
+
+def got_right():
+   to_learn.remove(current_card)
+   new_flashcard()
+   data = pandas.DataFrame(to_learn)
+   data.to_csv("data/words_to_learn.csv", index=False)
+
+
+
 
 
 # ______ SET TUP THE WINDOW _____
@@ -43,14 +62,14 @@ canvas.grid(column=0, row=0, columnspan=2)
 
 # ------ BUTTONS ------
 cross_image = PhotoImage(file="images/wrong.png")
-incorrect_button = Button(image=cross_image, highlightthickness=0, command=create_flashcard)
+incorrect_button = Button(image=cross_image, highlightthickness=0, command=new_flashcard)
 incorrect_button.grid(row=1, column=0)
 right_image = PhotoImage(file="images/right.png")
-correct_button = Button(image=right_image, highlightthickness=0, command=create_flashcard)
+correct_button = Button(image=right_image, highlightthickness=0, command=got_right)
 correct_button.grid(row=1, column=1)
 
 
-create_flashcard()
+new_flashcard()
 
 
 window.mainloop()
